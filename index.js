@@ -65,46 +65,38 @@ app.get('/products/:id', (req, res) => {
   });
 });
 
-// Update
-app.put('/products/:id', upload.single('image'), (req, res) => {
+// Update product with an image URL
+app.put('/products/:id', (req, res) => {
   const productId = req.params.id;
-  const { name, season, eng_description, thai_description, short_description, price, caution, source, image_url: bodyImageUrl } = req.body;
-  const uploadedImageUrl = req.file ? `/uploads/${req.file.filename}` : bodyImageUrl;
+  const { name, season, image_url, eng_description, thai_description, short_description, price, caution, source } = req.body;
 
   db.run(
     `UPDATE products 
      SET name = ?, season = ?, image_url = ?, eng_description = ?, thai_description = ?, short_description = ?, price = ?, caution = ?, source = ?
      WHERE id = ?`,
-    [name, season, uploadedImageUrl, eng_description, thai_description, short_description, price, caution, source, productId],
-    function (err) {
+    [name, season, image_url, eng_description, thai_description, short_description, price, caution, source, productId],
+    function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ changes: this.changes });
     }
   );
 });
 
-app.post('/products', upload.single('image'), (req, res) => {
-  const { name, season, eng_description, thai_description, short_description, price, caution, source, image_url: bodyImageUrl} = req.body;
-  const uploadedImageUrl = req.file ? `/uploads/${req.file.filename}` : bodyImageUrl;
+// CRUD operations for Products
+app.post('/products', (req, res) => {
+  const { name, season, image_url, eng_description, thai_description, short_description, price, caution, source } = req.body;
 
-  // Data validation: Ensure required fields are present and have the correct format
+  if (!image_url || !name) {
+    return res.status(400).json({ error: "Name and Image URL are required" });
+  }
+
   db.run("INSERT INTO products (name, season, image_url, eng_description, thai_description, short_description, price, caution, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [name, season, uploadedImageUrl, eng_description, thai_description, short_description, price, caution, source], function(err) {
+    [name, season, image_url, eng_description, thai_description, short_description, price, caution, source], function(err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
-    res.json({ id: this.lastID,
-      name,
-      season,
-      image: uploadedImageUrl,
-      eng_description,
-      thai_description,
-      short_description,
-      price,
-      caution,
-      source
-     });
+    res.json({ id: this.lastID, name, season, image_url, eng_description, thai_description, short_description, price, caution, source });
   });
 });
 
